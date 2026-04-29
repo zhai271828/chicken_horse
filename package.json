@@ -1,0 +1,13 @@
+{
+  "name": "super-chicken-horse-demo",
+  "version": "1.0.0",
+  "description": "A tiny online multiplayer platformer demo inspired by party platform games.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
+  }
+}

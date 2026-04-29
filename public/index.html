@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>超级鸡马 - 在线多人派对平台游戏</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <button id="sidebar-toggle" class="sidebar-toggle hidden">显示工具栏</button>
+    <div id="ui">
+      <div class="brand">
+        <div class="eyebrow">在线多人派对游戏</div>
+        <h1>🐔 超级鸡马</h1>
+      </div>
+
+      <div id="lobby-panel" class="panel">
+        <label>
+          玩家名称
+          <input id="name" maxlength="16" placeholder="输入你的名字..." />
+        </label>
+        <div class="section-title">选择角色</div>
+        <div id="animal-list" class="choice-grid"></div>
+        <button id="join">🎮 加入房间</button>
+        <button id="ready">✅ 准备</button>
+      </div>
+
+      <div id="status-panel" class="panel small">
+        <div id="status">未连接</div>
+        <div id="phase"></div>
+        <div id="timer"></div>
+        <div id="local-info"></div>
+        <div id="hint"></div>
+      </div>
+
+      <div id="game-panel" class="panel small hidden">
+        <div class="section-title">🔧 道具</div>
+        <div id="tool-list" class="choice-grid"></div>
+        <div class="section-title">🏆 计分板</div>
+        <div id="scoreboard"></div>
+        <div id="result" class="result"></div>
+      </div>
+    </div>
+
+    <canvas id="game"></canvas>
+    <script type="module" src="/client.js"></script>
+  </body>
+</html>
