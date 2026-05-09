@@ -173,7 +173,8 @@ export class RunState extends State {
             for (const player of players) {
                 if (player.gameState !== PlayerGameState.PLAYING) continue;
                 if (obs.checkProjectileHit(player)) {
-                    this.respawnManager.triggerDeath(player, DeathReason.TRAP);
+                    const ownerNo = this.ctx.scoreManager?.getTrapOwner(obs);
+                    this.respawnManager.triggerDeath(player, DeathReason.TRAP, ownerNo);
                 }
             }
         }
@@ -291,10 +292,39 @@ export class RunState extends State {
             p.textSize(5.2);
             p.textAlign(p.CENTER, p.TOP);
             p.text(
-                `第 ${this.ctx.scoreManager.currentRound} / ${this.ctx.scoreManager.maxRounds} 轮`,
+                `第 ${this.ctx.scoreManager.currentRound} 轮`,
                 gameWidth / 2,
                 roundY,
             );
+
+            // Map progress bar
+            const barW = 200;
+            const barH = 6;
+            const barX = gameWidth / 2 - barW / 2;
+            const barY = roundY + 14;
+            p.fill(40, 40, 50);
+            p.rect(barX, barY, barW, barH, 3);
+
+            // Show points for each player
+            for (const player of players) {
+                const points = this.ctx.scoreManager.getPoints(player.playerNo);
+                const progress = Math.min(points / this.ctx.scoreManager.pointsToAdvance, 1);
+                const col = player.playerNo === 0 ? p.color(90, 170, 255) : p.color(255, 200, 80);
+                p.fill(col);
+                if (player.playerNo === 0) {
+                    p.rect(barX, barY, barW * progress / 2, barH, 3, 0, 0, 3);
+                } else {
+                    p.rect(barX + barW / 2, barY, barW * progress / 2, barH, 0, 3, 3, 0);
+                }
+            }
+
+            p.fill(200, 200, 220);
+            p.textSize(4);
+            p.textAlign(p.CENTER, p.TOP);
+            const pointsStr = players.map(pl =>
+                `P${pl.playerNo + 1}:${this.ctx.scoreManager.getPoints(pl.playerNo)}分`
+            ).join(' | ');
+            p.text(`${pointsStr} | 100分换图`, gameWidth / 2, barY + 8);
 
             // HUD — per-player coins + wallet + inventory bag
             p.textSize(6);
@@ -310,8 +340,9 @@ export class RunState extends State {
                         ? p.color(90, 170, 255)
                         : p.color(255, 200, 80),
                 );
+                const points = scoreManager.getPoints(player.playerNo);
                 p.text(
-                    `P${player.playerNo + 1}  🪙 ${scoreManager.getRoundCoins(player)}  💰 ${scoreManager.getWallet(player)}  ${bagLabel}`,
+                    `P${player.playerNo + 1}  🪙 ${scoreManager.getRoundCoins(player)}  💰 ${scoreManager.getWallet(player)}  ⭐ ${points}分  ${bagLabel}`,
                     hx,
                     10,
                 );

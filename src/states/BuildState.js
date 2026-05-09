@@ -21,8 +21,8 @@ import { Slime } from '../entities/obstacles/Slime.js';
 import { BlackHole } from '../entities/obstacles/BlackHole.js';
 import { MushroomTeleporter } from '../entities/obstacles/MushroomTeleporter.js';
 import { Arrow } from '../entities/obstacles/Arrow.js';
-import { Pendulum } from '../entities/obstacles/Pendulum.js';
 import { Laser } from '../entities/obstacles/Laser.js';
+import { Eraser } from '../entities/obstacles/Eraser.js';
 import { drawShadowIcon } from '../utils/ShadowIcon.js';
 import { drawBombIcon } from '../utils/BombIcon.js';
 
@@ -763,6 +763,9 @@ export class BuildState extends State {
             case ObstacleType.LASER:
                 Laser.drawGhost(p, x, y);
                 break;
+            case ObstacleType.ERASER:
+                Eraser.drawGhost(p, x, y);
+                break;
         }
 
         if (invalid) {
@@ -1061,6 +1064,19 @@ export class BuildState extends State {
             p.circle(cx, cy - 2, 6);
             p.fill(255, 255, 255, available ? 180 : 50);
             p.circle(cx - 1, cy - 3, 2);
+            p.pop();
+            return;
+        }
+
+        if (type === ObstacleType.ERASER) {
+            // Eraser - golden circle with X
+            p.noStroke();
+            p.fill(255, 220, 80, available ? 200 : 60);
+            p.circle(cx, cy, w * 0.8);
+            p.fill(255, 255, 255, available ? 220 : 60);
+            p.textAlign(p.CENTER, p.CENTER);
+            p.textSize(16);
+            p.text('✕', cx, cy);
             p.pop();
             return;
         }
@@ -1441,10 +1457,18 @@ export class BuildState extends State {
             case ObstacleType.LASER:
                 obs = new Laser(p, x, y);
                 break;
+            case ObstacleType.ERASER:
+                obs = new Eraser(p, x, y, this.ctx);
+                break;
             default:
                 return null;
         }
-        if (obs) obs.type = type;
+        if (obs) {
+            obs.type = type;
+            // Register trap ownership for scoring
+            obs._obstacleId = `${this._currentTurn}_${Date.now()}_${Math.random()}`;
+            this.ctx.scoreManager?.registerTrap(obs, this._currentTurn);
+        }
         return obs;
     }
 }

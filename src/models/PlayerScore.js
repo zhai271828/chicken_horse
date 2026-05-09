@@ -1,33 +1,33 @@
 /**
- * PlayerScore — immutable-ish data record for one player's round statistics.
- *
- * Fields:
- *   playerNo    {number}       — player index (0-based)
- *   finished    {boolean}      — true if the player reached the finish tile
- *   finishTime  {number|null}  — seconds elapsed when finish was reached; null if failed
- *   deaths      {number}       — total death count this round
- *   coins       {number}       — coins collected this round (before banking)
- *   wallet      {number}       — persistent wallet total after round rewards applied
- *   rank        {number|null}  — final leaderboard position (1-based); set by ScoreManager
+ * PlayerScore — data record for one player's round statistics.
  */
 export class PlayerScore {
-    /**
-     * @param {number} playerNo
-     */
     constructor(playerNo) {
         this.playerNo = playerNo;
         this.finished = false;
-        this.finishTime = null; // seconds elapsed at finish
+        this.finishTime = null;
         this.deaths = 0;
-        this.coins = 0; // snapshot of round coins at end-of-round
-        this.wallet = 0; // snapshot of wallet after rewards applied
+        this.coins = 0;
+        this.wallet = 0;
         this.rank = null;
+
+        // New fields for scoring system
+        this.kills = 0;           // kills by this player's traps
+        this.totalKills = 0;      // total kills including all players
+        this.specialCoins = 0;    // rainbow coins collected
+        this.points = 0;          // total points this round
+        this.jumpCount = 0;       // jumps used this round
+        this.consecutiveDeaths = 0; // for "反复去世" title
+        this.lastDeathTime = 0;
+        this.deathBeforeFinish = 0; // deaths near finish line
+        this.killedBy = new Map(); // who killed this player most
+        this.trapTypesKilled = new Set(); // unique trap types that killed this player
+        this.finishWithoutDeath = false;
+        this.onlyFinisher = false;
+        this.consecutiveFailures = 0;
+        this.rainbowCoinStreak = 0;
     }
 
-    /**
-     * Returns a formatted finish-time string, e.g. "1:23.4" or "—" if failed.
-     * @returns {string}
-     */
     get finishTimeFormatted() {
         if (this.finishTime === null) return '—';
         const mins = Math.floor(this.finishTime / 60);
@@ -35,10 +35,6 @@ export class PlayerScore {
         return mins > 0 ? `${mins}:${secs}` : `${secs}s`;
     }
 
-    /**
-     * Returns "1st", "2nd", "3rd", "4th", or "—" if no rank assigned.
-     * @returns {string}
-     */
     get rankFormatted() {
         if (this.rank === null) return '—';
         const suffixes = ['st', 'nd', 'rd'];

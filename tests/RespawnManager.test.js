@@ -35,7 +35,7 @@ describe('RespawnManager', () => {
         respawnManager.triggerDeath(mockPlayer, 'SPIKE');
 
         expect(mockPlayer.die).toHaveBeenCalledWith('SPIKE');
-        expect(mockScoreManager.recordDeath).toHaveBeenCalledWith(mockPlayer);
+        expect(mockScoreManager.recordDeath).toHaveBeenCalledWith(mockPlayer, null);
         expect(respawnManager.queue.length).toBe(1);
     });
 

@@ -61,6 +61,14 @@ export const GameConfig = {
 
     // Value of each coin collected during a round
     COIN_VALUE: 1,
+    RAINBOW_COIN_VALUE: 10, // special rainbow coin worth 10 coins
+
+    // Scoring system
+    POINTS_TO_ADVANCE_MAP: 100, // points needed to advance to next map
+    TRAP_KILL_POINTS: 2, // points for killing someone with your trap
+    KILL_ALL_POINTS: 3, // bonus for killing all other players
+    ONLY_FINISHER_POINTS: 5, // bonus for being the only finisher
+    NO_DEATH_FINISH_POINTS: 3, // bonus for finishing without dying
 
     // Cannon
     CANNON_FIRE_INTERVAL: 2200, // ms between shots

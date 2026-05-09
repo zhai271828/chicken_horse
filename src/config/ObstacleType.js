@@ -29,4 +29,5 @@ export const ObstacleType = Object.freeze({
     MUSHROOM_TELEPORTER: 'MUSHROOM_TELEPORTER', // random teleport mushroom
     ARROW: 'ARROW', // gravity-affected arrow turret
     LASER: 'LASER', // aims then fires laser beam
+    ERASER: 'ERASER', // special: removes obstacles (given when stuck)
 });
