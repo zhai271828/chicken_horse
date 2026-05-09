@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Logs
 logs
 *.log
@@ -27,7 +26,3 @@ dist-ssr
 # Exclusions
 !.vscode/extensions.json
 !.husky
-=======
-node_modules/
-package-lock.json
->>>>>>> be3ce743ee652791b18300f09c54ab5672859c6b
