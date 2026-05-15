@@ -9,6 +9,12 @@ import { PlayerMovementState } from '../config/PlayerMovementState.js';
 import { PlayerState } from '../config/PlayerState.js';
 import { PlayerGameState } from '../config/PlayerGameState.js';
 import { DeathReason } from '../config/DeathReason.js';
+import {
+    applyGravityStep,
+    resolveHorizontalVelocity,
+    resolveJumpState,
+    resolveMovementState,
+} from '../sim/core/playerMotion.js';
 
 import {
     moveAndCollideX,
@@ -132,31 +138,35 @@ export class Player {
         const speedMult = this.speedMultiplier;
         this.slideMode = false; // reset; ice obstacles re-set before this call
         this.speedMultiplier = 1.0; // reset; IceBlock re-sets before this call
-
-        const noInput = !this.input.left && !this.input.right;
-        if (noInput && prevSlide) {
-            // Sliding: preserve momentum with light friction instead of zeroing
-            this.vx *= 0.97;
-        } else {
-            this.vx = 0;
-            if (this.input.left) this.vx -= this.speed * speedMult;
-            if (this.input.right) this.vx += this.speed * speedMult;
-        }
+        this.vx = resolveHorizontalVelocity({
+            left: this.input.left,
+            right: this.input.right,
+            vx: this.vx,
+            speed: this.speed,
+            speedMultiplier: speedMult,
+            slideMode: prevSlide,
+        });
     }
     /**
      * Handles vertical player movement based on input.
      */
     jumpUp() {
-        if (this.onGround) {
-            this.jumpsLeft = this.maxJumps;
-            this.jumpMultiplier = 1.0; // reset when landing
-        }
-        if (this.input.jump && !this.secondJump && this.jumpsLeft > 0) {
-            this.vy = -this.jumpVel * this.jumpMultiplier;
-            this.jumpsLeft--;
-            this.onGround = false;
-        }
-        this.secondJump = this.input.jump;
+        const next = resolveJumpState({
+            onGround: this.onGround,
+            jumpsLeft: this.jumpsLeft,
+            maxJumps: this.maxJumps,
+            jumpPressed: this.input.jump,
+            jumpHeld: this.secondJump,
+            vy: this.vy,
+            jumpVelocity: this.jumpVel,
+            jumpMultiplier: this.jumpMultiplier,
+        });
+
+        this.vy = next.vy;
+        this.jumpsLeft = next.jumpsLeft;
+        this.onGround = next.onGround;
+        this.secondJump = next.jumpHeld;
+        this.jumpMultiplier = next.jumpMultiplier;
     }
 
     /**
@@ -206,10 +216,11 @@ export class Player {
      * Applies gravity to the player.
      */
     comeDown() {
-        this.vy += this.gravity;
-        if (this.vy > this.maxFall) {
-            this.vy = this.maxFall;
-        }
+        this.vy = applyGravityStep({
+            vy: this.vy,
+            gravity: this.gravity,
+            maxFall: this.maxFall,
+        });
     }
 
     /**
@@ -226,24 +237,14 @@ export class Player {
      * Updates the movement state (idle, run, jump, fall).
      */
     updateMovementState() {
-        if (this.vx > 0) {
-            this.facingRight = true;
-        }
-        if (this.vx < 0) {
-            this.facingRight = false;
-        }
-
-        if (!this.onGround) {
-            this.movementState =
-                this.vy < 0
-                    ? PlayerMovementState.JUMP
-                    : PlayerMovementState.FALL;
-        } else {
-            this.movementState =
-                this.vx === 0
-                    ? PlayerMovementState.IDLE
-                    : PlayerMovementState.RUN;
-        }
+        const next = resolveMovementState({
+            vx: this.vx,
+            vy: this.vy,
+            onGround: this.onGround,
+            facingRight: this.facingRight,
+        });
+        this.facingRight = next.facingRight;
+        this.movementState = next.movementState;
     }
 
     /**
