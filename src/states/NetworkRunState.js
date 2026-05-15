@@ -19,6 +19,10 @@ import { AnimationConfigPolar } from '../config/AnimationConfigPolar.js';
 import { RunState } from './RunState.js';
 import { runFixedSteps } from '../sim/core/fixedStep.js';
 import {
+  applyPlayerSnapshot,
+  createPlayerSnapshot,
+} from '../sim/state/playerSnapshot.js';
+import {
   createObstacleFromNetwork,
   hydrateNetworkObstacles,
   linkNetworkTeleporters,
@@ -608,14 +612,10 @@ export class NetworkRunState extends State {
               y: playerInstance.y,
               time: this._lastGameStateTime,
             });
-            playerInstance.x = serverPlayer.x ?? playerInstance.x;
-            playerInstance.y = serverPlayer.y ?? playerInstance.y;
-            playerInstance.vx = serverPlayer.vx ?? 0;
-            playerInstance.vy = serverPlayer.vy ?? 0;
-            playerInstance.lifeState = serverPlayer.lifeState || 'ALIVE';
-            playerInstance.facingRight = serverPlayer.facingRight !== false;
-            playerInstance.character = serverPlayer.character || playerInstance.character;
-            playerInstance.movementState = this.getMovementStateForRender(serverPlayer);
+            applyPlayerSnapshot(playerInstance, {
+              ...serverPlayer,
+              movementState: this.getMovementStateForRender(serverPlayer),
+            });
           }
         }
         this._lastGameStateTime = now;
@@ -821,20 +821,9 @@ export class NetworkRunState extends State {
     // Coins live on the RunState instance, not on ctx
     const coins = this.runState?.coins || [];
 
-    const playersData = players.map(p => ({
-      id: p.networkId || p.playerNo,
-      x: p.x,
-      y: p.y,
-      vx: p.vx,
-      vy: p.vy,
-      lifeState: p.lifeState,
-      facingRight: p.facingRight,
-      movementState: p.movementState,
-      name: p.nickname,
-      character: p.character,
-      w: p.w,
-      h: p.h,
-    }));
+    const playersData = players.map((player) =>
+      createPlayerSnapshot(player),
+    );
     this.syncLocalAudioTransitions(playersData);
 
     const scoresData = {};
@@ -1257,18 +1246,11 @@ export class NetworkRunState extends State {
         }
       }
 
-      playerInstance.lifeState = serverPlayer.lifeState || 'ALIVE';
-      playerInstance.facingRight = serverPlayer.facingRight !== false;
-      playerInstance.character = serverPlayer.character || playerInstance.character;
-      playerInstance.vx = serverPlayer.vx ?? playerInstance.vx;
-      playerInstance.vy = serverPlayer.vy ?? playerInstance.vy;
-      playerInstance.movementState = this.getMovementStateForRender(serverPlayer);
-      if (isLocal) {
-        playerInstance.onGround = Boolean(serverPlayer.onGround ?? playerInstance.onGround);
-        playerInstance.jumpsLeft = serverPlayer.jumpsLeft ?? playerInstance.jumpsLeft;
-        playerInstance.maxJumps = serverPlayer.maxJumps ?? playerInstance.maxJumps;
-        this.applyPredictedLocalFacing(playerInstance);
-      }
+      applyPlayerSnapshot(playerInstance, {
+        ...serverPlayer,
+        movementState: this.getMovementStateForRender(serverPlayer),
+      });
+      if (isLocal) this.applyPredictedLocalFacing(playerInstance);
 
       if (playerInstance.lifeState === PlayerState.DEAD) continue;
 
