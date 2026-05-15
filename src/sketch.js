@@ -1,0 +1,380 @@
+import { Player } from './entities/Player.js';
+import { ScoreManager } from './systems/ScoreManager.js';
+import { GameStage } from './config/GameStage.js';
+import { MapManager } from './systems/MapManager.js';
+
+import { AudioManager } from './systems/AudioManager.js';
+import { BootState } from './states/BootState.js';
+import { MenuState } from './states/MenuState.js';
+import { CharSelectState } from './states/CharSelectState.js';
+
+import { MapMenuState } from './states/MapMenuState.js';
+import { BuildState } from './states/BuildState.js';
+import { RunState } from './states/RunState.js';
+import { ResultsState } from './states/ResultsState.js';
+import { ShopState } from './states/ShopState.js';
+import { TutorialState } from './states/TutorialState.js';
+import { WalkMapState } from './states/WalkMapState.js';
+import { GameConfig } from './config/GameConfig.js';
+import { AnimationConfigChick } from './config/AnimationConfigChick.js';
+import { AnimationConfigBunny } from './config/AnimationConfigBunny.js';
+import { AIMapGenerator } from './systems/AIMapGenerator.js';
+import { NetworkManager } from './network/NetworkManager.js';
+import { LobbyState } from './states/LobbyState.js';
+import { NetworkRunState } from './states/NetworkRunState.js';
+import { NetworkShopState } from './states/NetworkShopState.js';
+import { NetworkBuildState } from './states/NetworkBuildState.js';
+import { NetworkResultsState } from './states/NetworkResultsState.js';
+
+import chickenSprite from './public/assets/sprites/chicken_all_frames.png';
+import bunnySprite from './public/assets/sprites/bunny_all_frames.png';
+import duckSprite from './public/assets/sprites/duck_all_frames.png';
+import polarSprite from './public/assets/sprites/polar_all_frames.png';
+
+import saw from './public/assets/obstacles/Saw/On (38x38).png';
+import fire from './public/assets/obstacles/Fire/On (16x32).png';
+import trampoline from './public/assets/obstacles/Trampoline/Jump (28x28).png';
+import spikedBall from './public/assets/obstacles/Spiked Ball/Spiked Ball.png';
+import cannon from './public/assets/obstacles/Cannon/cannon (30x18).png';
+import fallingPlatform from './public/assets/obstacles/Falling Platforms/On (32x10).png';
+import platform from './public/assets/obstacles/Platforms/platform (40x40).png';
+import movingPlatform from './public/assets/obstacles/Moving Platforms/Brown On (32x8).png';
+import icePlatform from './public/assets/obstacles/Ice Platforms/ice platform (40x40).png';
+import spikePlatform from './public/assets/obstacles/Spike Platforms/spike platform2 (40x40).png';
+import teleporter from './public/assets/obstacles/Teleporter/teleporter (40x40).png';
+import windZone from './public/assets/obstacles/Wind Zone/wind zone (32x32).png';
+import endpointFlag from './public/assets/obstacles/endpoint/Checkpoint(FlagIdle)(64x64).png';
+import shadowIcon from './public/assets/obstacles/Shadow/shadow-icon.svg';
+import map1Preview from './public/assets/maps/map1/background.png';
+import map2Preview from './public/assets/maps/map2/background.png';
+import startScreen from './public/assets/images/background/startscreen-bg.png';
+import mapBackground from './public/assets/images/background/map-selection-bg.png';
+import panasChillFont from './public/assets/fonts/PanasChill.ttf';
+
+import backgroundMusic from './public/assets/audio/music-bg.mp3';
+/**
+ * Root p5 sketch.
+ *
+ * Manages the canvas, viewport transform, shared session context,
+ * and the active state machine. All game logic lives in src/states/.
+ *
+ * State flow:
+ *   BOOT → MENU → MAPMENU → BUILD → RUN → RESULTS → SHOP → BUILD → …
+ *                                                    ↑  ESC  ↓
+ *                                                  MAPMENU
+ */
+export const sketch = (p) => {
+    let activeState;
+    let states;
+
+    let gameWidth = GameConfig.GAME_WIDTH;
+    let gameHeight = GameConfig.GAME_HEIGHT;
+
+    let aiMapFlag = 1; // 0 for AI map generator, 1 for procedural
+    let apiKey = '';
+    const mapManager = new MapManager(p, aiMapFlag, apiKey);
+    const audioManager = new AudioManager();
+    const networkManager = new NetworkManager();
+
+    let sawFrames;
+    let fireFrames;
+    let trampolineBouncing;
+    let spikedBallImg;
+    let cannonImg;
+    let fallingPlatformFrames;
+    let platformImg;
+    let movingPlatformImg;
+    let icePlatformImg;
+    let spikePlatformImg;
+    let teleporterImg;
+    let windZoneImg;
+    let endpointFlagImg;
+    let shadowIconImg;
+    let map1PreviewImg;
+    let map2PreviewImg;
+    let startScreenBackground;
+    let mapMenuBackgroundImg;
+    let menuFont;
+
+    let chickenSheet;
+    let bunnySheet;
+    let duckSheet;
+    let polarSheet;
+
+    let music;
+
+    let ctx;
+
+    p.preload = function () {
+        chickenSheet = p.loadImage(chickenSprite);
+        bunnySheet = p.loadImage(bunnySprite);
+        duckSheet = p.loadImage(duckSprite);
+        polarSheet = p.loadImage(polarSprite);
+        sawFrames = p.loadImage(saw);
+        fireFrames = p.loadImage(fire);
+        trampolineBouncing = p.loadImage(trampoline);
+        spikedBallImg = p.loadImage(spikedBall);
+        cannonImg = p.loadImage(cannon);
+        fallingPlatformFrames = p.loadImage(fallingPlatform);
+        platformImg = p.loadImage(platform);
+        movingPlatformImg = p.loadImage(movingPlatform);
+        icePlatformImg = p.loadImage(icePlatform);
+        spikePlatformImg = p.loadImage(spikePlatform);
+        teleporterImg = p.loadImage(teleporter);
+        windZoneImg = p.loadImage(windZone);
+        endpointFlagImg = p.loadImage(endpointFlag);
+        shadowIconImg = p.loadImage(shadowIcon);
+        map1PreviewImg = p.loadImage(map1Preview);
+        map2PreviewImg = p.loadImage(map2Preview);
+        startScreenBackground = p.loadImage(startScreen);
+        mapMenuBackgroundImg = p.loadImage(mapBackground);
+        menuFont = p.loadFont(panasChillFont);
+        music = p.loadSound(backgroundMusic);
+        mapManager.preloadAll();
+    };
+
+    // ── Setup ──
+
+    p.setup = function () {
+        p.createCanvas(p.windowWidth, p.windowHeight);
+
+        window.ai = new AIMapGenerator(apiKey);
+
+        /**
+         * Shared session context.
+         * placedObstacles — written by BuildState, read by RunState.
+         *                   Lives here so it survives the BUILD → RUN transition.
+         * Obstacle tokens are now stored per-player in player.inventory (Map).
+         */
+        const isLocalDevHost =
+            window.location.hostname === 'localhost' ||
+            window.location.hostname === '127.0.0.1';
+        const defaultWorkerUrl = isLocalDevHost
+            ? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://127.0.0.1:8787`
+            : 'wss://chicken-horse-game.1056593143.workers.dev';
+
+        ctx = {
+            p,
+            gameWidth: GameConfig.GAME_WIDTH,
+            gameHeight: GameConfig.GAME_HEIGHT,
+            walkMapBg: mapMenuBackgroundImg,
+            playerCount: 2, // default, updated by CharSelectState
+            players: [],
+            tiledMap: null,
+            scoreManager: null,
+            mapKey: 'map1',
+            selectMap: (mapKey) => mapManager.selectMap(mapKey, ctx),
+            sprites: {
+                chicken: chickenSheet,
+                bunny: bunnySheet,
+                duck: duckSheet,
+                polar: polarSheet,
+            },
+            mapPreviews: {
+                map1: map1PreviewImg,
+                map2: map2PreviewImg,
+            },
+            shopIcons: {
+                PLATFORM: platformImg,
+                MOVING_PLATFORM: movingPlatformImg,
+                FALLING_PLATFORM: fallingPlatformFrames,
+                ICE_PLATFORM: icePlatformImg,
+                BOUNCE_PAD: trampolineBouncing,
+                SPIKE: spikePlatformImg,
+                CANNON: cannonImg,
+                SAW: sawFrames,
+                FLAME: fireFrames,
+                SPIKED_BALL: spikedBallImg,
+                WIND_ZONE: windZoneImg,
+                TELEPORTER: teleporterImg,
+                BOMB: null,
+                SHADOW: shadowIconImg,
+            },
+            endpointFlag: endpointFlagImg,
+            placedObstacles: [],
+            shopHasRun: false,
+            audioManager,
+            networkManager,
+            workerUrl: import.meta.env.VITE_WORKER_URL || defaultWorkerUrl,
+            devMode: false,
+            resumeRunState: false,
+            displayMode: 'stretch',
+            aiMapFlag,
+            apiKey,
+            mapManager,
+        };
+
+        document.body.style.fontFamily = "'Noto Sans SC', 'PanasChill', sans-serif";
+
+        mapManager.initialize(ctx);
+        gameWidth = ctx.gameWidth;
+        gameHeight = ctx.gameHeight;
+        audioManager.setMusicTrack(music);
+
+        const goTo = (stage) => {
+            activeState?.exit();
+            activeState = states[stage];
+            activeState.enter();
+        };
+
+        states = {
+            [GameStage.BOOT]: new BootState(ctx, goTo),
+            [GameStage.MENU]: new MenuState(
+                ctx,
+                goTo,
+                startScreenBackground,
+                menuFont,
+            ),
+            [GameStage.CHAR_SELECT]: new CharSelectState(ctx, goTo),
+            [GameStage.MAPMENU]: new MapMenuState(ctx, goTo),
+            [GameStage.BUILD]: new BuildState(
+                ctx,
+                goTo,
+                sawFrames,
+                fireFrames,
+                trampolineBouncing,
+                spikedBallImg,
+                cannonImg,
+                fallingPlatformFrames,
+            ),
+            [GameStage.RUN]: new RunState(ctx, goTo),
+            [GameStage.RESULTS]: new ResultsState(ctx, goTo),
+            [GameStage.SHOP]: new ShopState(ctx, goTo),
+            [GameStage.TUTORIAL]: new TutorialState(ctx, goTo),
+            [GameStage.WALK_MAP]: new WalkMapState(ctx, goTo),
+            [GameStage.LOBBY]: new LobbyState(ctx, goTo, networkManager),
+            [GameStage.NETWORK_RUN]: new NetworkRunState(ctx, goTo, networkManager),
+            [GameStage.NETWORK_SHOP]: new NetworkShopState(ctx, goTo, networkManager),
+            [GameStage.NETWORK_BUILD]: new NetworkBuildState(
+                ctx,
+                goTo,
+                networkManager,
+                sawFrames,
+                fireFrames,
+                trampolineBouncing,
+                spikedBallImg,
+                cannonImg,
+                fallingPlatformFrames,
+            ),
+            [GameStage.NETWORK_RESULTS]: new NetworkResultsState(ctx, goTo, networkManager),
+        };
+
+        goTo(GameStage.BOOT);
+    };
+
+    // ── Draw ──
+
+    p.draw = function () {
+        if (ctx) {
+            gameWidth = ctx.gameWidth;
+            gameHeight = ctx.gameHeight;
+        }
+
+        p.background(0);
+        const viewport = _getViewport();
+        const mx = (p.mouseX - viewport.offsetX) / viewport.scaleX;
+        const my = (p.mouseY - viewport.offsetY) / viewport.scaleY;
+
+        p.cursor(p.ARROW);
+        p.push();
+        p.translate(viewport.offsetX, viewport.offsetY);
+        p.scale(viewport.scaleX, viewport.scaleY);
+        p.textFont(GameConfig.FONT);
+
+        activeState.update(p.deltaTime || 16.6);
+        const fontScale = _getFontSizeScale();
+        _withFontScale(fontScale, () => activeState.render(mx, my));
+
+        p.pop();
+    };
+
+    // ── Input ──
+
+    p.mousePressed = function () {
+        const viewport = _getViewport();
+        const mx = (p.mouseX - viewport.offsetX) / viewport.scaleX;
+        const my = (p.mouseY - viewport.offsetY) / viewport.scaleY;
+        activeState.mousePressed(mx, my);
+    };
+
+    p.mouseDragged = function () {
+        const viewport = _getViewport();
+        const mx = (p.mouseX - viewport.offsetX) / viewport.scaleX;
+        const my = (p.mouseY - viewport.offsetY) / viewport.scaleY;
+        activeState.mouseDragged(mx, my);
+    };
+
+    p.mouseReleased = function () {
+        const viewport = _getViewport();
+        const mx = (p.mouseX - viewport.offsetX) / viewport.scaleX;
+        const my = (p.mouseY - viewport.offsetY) / viewport.scaleY;
+        activeState.mouseReleased(mx, my);
+    };
+
+    p.keyPressed = function () {
+        activeState.keyPressed();
+    };
+
+    p.windowResized = function () {
+        p.resizeCanvas(p.windowWidth, p.windowHeight);
+    };
+
+    p.doubleClicked = function () {
+        p.fullscreen(!p.fullscreen());
+    };
+
+    function _getViewport() {
+        if (ctx?.displayMode === 'stretch') {
+            return {
+                scaleX: p.width / gameWidth,
+                scaleY: p.height / gameHeight,
+                offsetX: 0,
+                offsetY: 0,
+            };
+        }
+
+        const scale = p.min(p.width / gameWidth, p.height / gameHeight);
+        return {
+            scaleX: scale,
+            scaleY: scale,
+            offsetX: (p.width - gameWidth * scale) / 2,
+            offsetY: (p.height - gameHeight * scale) / 2,
+        };
+    }
+
+    function _getFontSizeScale() {
+        if (activeState === states?.[GameStage.MENU]) return 1;
+        return 3;
+    }
+
+    function _withFontScale(multiplier, drawFn) {
+        if (multiplier === 1) {
+            drawFn();
+            return;
+        }
+
+        const originalTextSize = p.textSize.bind(p);
+        const originalTextFont = p.textFont.bind(p);
+
+        p.textSize = function (size) {
+            if (typeof size === 'number') {
+                return originalTextSize(size * multiplier);
+            }
+            return originalTextSize(size);
+        };
+
+        p.textFont = function (font, size) {
+            if (typeof size === 'number') {
+                return originalTextFont(font, size * multiplier);
+            }
+            return originalTextFont(font);
+        };
+
+        try {
+            drawFn();
+        } finally {
+            p.textSize = originalTextSize;
+            p.textFont = originalTextFont;
+        }
+    }
+};

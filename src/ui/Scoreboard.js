@@ -1,0 +1,192 @@
+/**
+ * Scoreboard — end-of-round overlay showing full player stats and rankings.
+ *
+ * Displayed when timeManager.isGameOver becomes true.
+ * Shows a table with: Rank | Player | Status | Time | Deaths | Coins | Wallet
+ *
+ * Ranking order (from ScoreManager.getRankedScores):
+ *   finished players (by finish time asc) → failed players (by coins desc)
+ */
+export class Scoreboard {
+    /**
+     * @param {p5}     p
+     * @param {number} gameWidth
+     * @param {number} gameHeight
+     */
+    constructor(p, gameWidth, gameHeight) {
+        this.p = p;
+        this.gameWidth = gameWidth;
+        this.gameHeight = gameHeight;
+
+        this.playerColours = [
+            { r: 90, g: 170, b: 255 },
+            { r: 255, g: 200, b: 80 },
+            { r: 100, g: 220, b: 120 },
+            { r: 255, g: 100, b: 120 },
+        ];
+    }
+
+    /**
+     * @param {ScoreManager} scoreManager
+     * @param {Player[]} players
+     */
+    render(scoreManager, players) {
+        const p = this.p;
+        const gw = this.gameWidth;
+        const gh = this.gameHeight;
+
+        p.fill(0, 0, 0, 185);
+        p.noStroke();
+        p.rect(0, 0, gw, gh);
+
+        const panelW = gw * 0.76;
+        const panelH = gh * 0.7;
+        const panelX = (gw - panelW) / 2;
+        const panelY = (gh - panelH) / 2;
+
+        p.fill(20, 20, 35, 230);
+        p.stroke(80, 80, 120);
+        p.strokeWeight(2);
+        p.rect(panelX, panelY, panelW, panelH, 12);
+        p.noStroke();
+
+        p.fill(255);
+        p.textAlign(p.CENTER, p.TOP);
+        p.textSize(14);
+        p.textStyle(p.BOLD);
+        p.text('本轮结束', gw / 2, panelY + 18);
+        p.textStyle(p.NORMAL);
+
+        const cols = this._colPositions(panelX, panelW);
+        const headerY = panelY + 62;
+
+        p.fill(160, 160, 200);
+        p.textSize(6.4);
+        p.textAlign(p.CENTER, p.TOP);
+        p.text('排名', cols.rank, headerY);
+        p.text('玩家', cols.player, headerY);
+        p.text('状态', cols.status, headerY);
+        p.text('用时', cols.time, headerY);
+        p.text('死亡', cols.deaths, headerY);
+        p.text('金币', cols.coins, headerY);
+        p.text('杀人', cols.kills, headerY);
+        p.text('积分', cols.points, headerY);
+        p.text('总积分', cols.totalPoints, headerY);
+        p.text('钱包', cols.wallet, headerY);
+
+        p.stroke(60, 60, 90);
+        p.strokeWeight(1);
+        p.line(panelX + 16, headerY + 18, panelX + panelW - 16, headerY + 18);
+        p.noStroke();
+
+        const ranked = scoreManager.getRankedScores();
+        const rowH = 32;
+        const firstRowY = headerY + 26;
+
+        ranked.forEach((score, i) => {
+            const rowY = firstRowY + i * rowH;
+            const col = this.playerColours[score.playerNo] ?? {
+                r: 200,
+                g: 200,
+                b: 200,
+            };
+            const isTop = i === 0 && score.finished;
+
+            if (isTop) {
+                p.fill(255, 215, 0, 22);
+                p.rect(panelX + 10, rowY - 3, panelW - 20, rowH - 3, 6);
+            }
+
+            p.textAlign(p.CENTER, p.TOP);
+            p.textSize(6.2);
+
+            p.fill(255, 215, 0);
+            p.text(this._rankLabel(i, score.rank), cols.rank, rowY + 1);
+
+            p.fill(col.r, col.g, col.b);
+            p.text(`P${score.playerNo + 1}`, cols.player, rowY + 1);
+
+            p.fill(score.finished ? 100 : 220, score.finished ? 220 : 80, 100);
+            p.text(
+                score.finished ? '已完成' : '未完成',
+                cols.status,
+                rowY + 1,
+            );
+
+            p.fill(200, 200, 220);
+            p.text(
+                this._fitText(score.finishTimeFormatted, 9),
+                cols.time,
+                rowY + 1,
+            );
+
+            p.fill(
+                score.deaths > 0 ? 255 : 180,
+                score.deaths > 0 ? 130 : 180,
+                score.deaths > 0 ? 130 : 200,
+            );
+            p.text(String(score.deaths), cols.deaths, rowY + 1);
+
+            p.fill(255, 215, 0);
+            p.text(String(score.coins), cols.coins, rowY + 1);
+
+            p.fill(score.kills > 0 ? [255, 80, 80] : [140, 140, 160]);
+            p.text(String(score.kills), cols.kills, rowY + 1);
+
+            const roundPts = scoreManager.getRoundPoints(score.playerNo);
+            p.fill(100, 200, 255);
+            p.text(String(roundPts), cols.points, rowY + 1);
+
+            const totalPts = scoreManager.getTotalPoints(score.playerNo);
+            p.fill(180, 140, 255);
+            p.text(String(totalPts), cols.totalPoints, rowY + 1);
+
+            p.fill(100, 220, 180);
+            p.text(String(score.wallet), cols.wallet, rowY + 1);
+
+            if (i < ranked.length - 1) {
+                p.stroke(40, 40, 60);
+                p.strokeWeight(1);
+                p.line(
+                    panelX + 16,
+                    rowY + rowH - 5,
+                    panelX + panelW - 16,
+                    rowY + rowH - 5,
+                );
+                p.noStroke();
+            }
+        });
+
+        p.fill(120, 120, 150);
+        p.textSize(6.2);
+        p.textAlign(p.CENTER, p.BOTTOM);
+        p.text('回车 → 商店  •  ESC → 菜单', gw / 2, panelY + panelH - 12);
+    }
+
+    _rankLabel(index, rank) {
+        if (index === 0) return '第1';
+        if (index === 1) return '第2';
+        if (index === 2) return '第3';
+        return `#${rank}`;
+    }
+
+    _fitText(text, maxChars) {
+        const safe = String(text ?? '');
+        return safe.length <= maxChars
+            ? safe
+            : `${safe.slice(0, maxChars - 1)}…`;
+    }
+
+    _colPositions(panelX, panelW) {
+        const usable = panelW - 32;
+        const segments = [0.06, 0.08, 0.12, 0.10, 0.08, 0.08, 0.08, 0.10, 0.10, 0.10];
+        const positions = [];
+        let acc = 0;
+        for (const frac of segments) {
+            positions.push(panelX + 16 + (acc + frac / 2) * usable);
+            acc += frac;
+        }
+        const [rank, player, status, time, deaths, coins, kills, points, totalPoints, wallet] = positions;
+        return { rank, player, status, time, deaths, coins, kills, points, totalPoints, wallet };
+    }
+}

@@ -1,0 +1,150 @@
+/**
+ * MessageTypes - Constants for network message types
+ *
+ * Defines all message types used for client-server communication.
+ */
+
+// Client -> Server messages
+export const ClientMessages = {
+  CREATE_ROOM: 'CREATE_ROOM',
+  JOIN_ROOM: 'JOIN_ROOM',
+  PLAYER_INPUT: 'PLAYER_INPUT',
+  PLACE_OBSTACLE: 'PLACE_OBSTACLE',
+  BUY_OBSTACLE: 'BUY_OBSTACLE',
+  USE_ERASER: 'USE_ERASER',
+  PLAYER_READY: 'PLAYER_READY',
+  START_GAME: 'START_GAME',
+  SELECT_CHARACTER: 'SELECT_CHARACTER',
+  CHAT: 'CHAT',
+  REJOIN: 'REJOIN',
+  SHOP_PURCHASE: 'SHOP_PURCHASE',
+  SHOP_DONE: 'SHOP_DONE',
+  BUILD_DONE: 'BUILD_DONE',
+  RESULTS_DONE: 'RESULTS_DONE',
+};
+
+// Server -> Client messages
+export const ServerMessages = {
+  // Connection
+  WELCOME: 'WELCOME',
+  ERROR: 'ERROR',
+
+  // Room management
+  ROOM_CREATED: 'ROOM_CREATED',
+  ROOM_JOINED: 'ROOM_JOINED',
+  PLAYER_JOINED: 'PLAYER_JOINED',
+  PLAYER_LEFT: 'PLAYER_LEFT',
+  HOST_CHANGED: 'HOST_CHANGED',
+
+  // Character selection
+  CHARACTER_SELECTED: 'CHARACTER_SELECTED',
+  PLAYER_READY_CHANGED: 'PLAYER_READY_CHANGED',
+
+  // Game state
+  GAME_STARTED: 'GAME_STARTED',
+  GAME_STATE: 'GAME_STATE',
+  STAGE_CHANGE: 'STAGE_CHANGE',
+
+  // Build phase
+  OBSTACLE_PLACED: 'OBSTACLE_PLACED',
+  OBSTACLES_ERASED: 'OBSTACLES_ERASED',
+  OBSTACLE_BOUGHT: 'OBSTACLE_BOUGHT',
+
+  // Run phase
+  PLAYER_DEATH: 'PLAYER_DEATH',
+  PLAYER_RESPAWN: 'PLAYER_RESPAWN',
+  PLAYER_FINISH: 'PLAYER_FINISH',
+  COIN_COLLECTED: 'COIN_COLLECTED',
+
+  // Round end
+  ROUND_ENDED: 'ROUND_ENDED',
+  MAP_CHANGED: 'MAP_CHANGED',
+
+  // Simultaneous shop phase
+  SHOP_PHASE_START: 'SHOP_PHASE_START',
+  SHOP_SYNC: 'SHOP_SYNC',
+  ALL_SHOP_DONE: 'ALL_SHOP_DONE',
+
+  // Simultaneous build phase
+  BUILD_PHASE_START: 'BUILD_PHASE_START',
+  BUILD_SYNC: 'BUILD_SYNC',
+  ALL_BUILD_DONE: 'ALL_BUILD_DONE',
+
+  // Inventory sync
+  INVENTORY_SYNC: 'INVENTORY_SYNC',
+
+  // Round results
+  ROUND_RESULTS: 'ROUND_RESULTS',
+  RESULTS_SYNC: 'RESULTS_SYNC',
+
+  // Reconnection
+  REJOIN_SUCCESS: 'REJOIN_SUCCESS',
+  PLAYER_REJOINED: 'PLAYER_REJOINED',
+};
+
+// Game stages
+export const GameStage = {
+  LOBBY: 'LOBBY',
+  CHAR_SELECT: 'CHAR_SELECT',
+  BUILD: 'BUILD',
+  RUN: 'RUN',
+  RESULTS: 'RESULTS',
+  SHOP: 'SHOP',
+  NETWORK_RUN: 'NETWORK_RUN',
+  NETWORK_SHOP: 'NETWORK_SHOP',
+  NETWORK_BUILD: 'NETWORK_BUILD',
+  NETWORK_RESULTS: 'NETWORK_RESULTS',
+};
+
+// Player states
+export const PlayerState = {
+  ALIVE: 'ALIVE',
+  DEAD: 'DEAD',
+  RESPAWNING: 'RESPAWNING',
+};
+
+// Player movement states
+export const MovementState = {
+  IDLE: 'IDLE',
+  RUN: 'RUN',
+  JUMP: 'JUMP',
+  FALL: 'FALL',
+};
+
+// Death reasons
+export const DeathReason = {
+  TRAP: 'TRAP',
+  FALL: 'FALL',
+};
+
+// Obstacle types
+export const ObstacleType = {
+  PLATFORM: 'PLATFORM',
+  MOVING_PLATFORM: 'MOVING_PLATFORM',
+  FALLING_PLATFORM: 'FALLING_PLATFORM',
+  ICE_PLATFORM: 'ICE_PLATFORM',
+  BOUNCE_PAD: 'BOUNCE_PAD',
+  SPIKE: 'SPIKE',
+  CANNON: 'CANNON',
+  ARROW: 'ARROW',
+  SAW: 'SAW',
+  FLAME: 'FLAME',
+  SPIKED_BALL: 'SPIKED_BALL',
+  WIND_ZONE: 'WIND_ZONE',
+  TELEPORTER: 'TELEPORTER',
+  BOMB: 'BOMB',
+  SHADOW: 'SHADOW',
+  SLIME: 'SLIME',
+  BLACK_HOLE: 'BLACK_HOLE',
+  MUSHROOM_TELEPORTER: 'MUSHROOM_TELEPORTER',
+  LASER: 'LASER',
+  ERASER: 'ERASER',
+};
+
+// Character types
+export const CharacterType = {
+  CHICKEN: 'chicken',
+  BUNNY: 'bunny',
+  DUCK: 'duck',
+  POLAR: 'polar',
+};
