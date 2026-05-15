@@ -23,6 +23,10 @@ import {
   createPlayerSnapshot,
 } from '../sim/state/playerSnapshot.js';
 import {
+  createCoinSnapshot,
+  createRoundSnapshot,
+} from '../sim/state/roundSnapshot.js';
+import {
   createObstacleFromNetwork,
   hydrateNetworkObstacles,
   linkNetworkTeleporters,
@@ -826,47 +830,21 @@ export class NetworkRunState extends State {
     );
     this.syncLocalAudioTransitions(playersData);
 
-    const scoresData = {};
-    if (scoreManager) {
-      players.forEach(p => {
-        const score = scoreManager.getScore(p);
-        scoresData[p.networkId || p.playerNo] = {
-          points: scoreManager.getPoints(p.playerNo),
-          coins: scoreManager.getRoundCoins(p),
-          wallet: scoreManager.getWallet(p),
-          roundPoints: scoreManager.getRoundPoints(p.playerNo),
-          kills: score?.kills ?? 0,
-          deaths: score?.deaths ?? 0,
-          rainbowCoins: scoreManager.getRainbowCoins?.(p) ?? score?.specialCoins ?? 0,
-          finished: Boolean(score?.finished),
-        };
-      });
-    }
-
     const obstaclesData = includeObstacles
       ? (placedObstacles || [])
         .map((obs) => serializeObstacleForNetwork(this.ctx, obs))
         .filter((obs) => obs.type)
       : undefined;
 
+    const now = Date.now();
     const coinsData = coins.map(coin => {
       this.markCollectedCoin(coin, players);
-      return {
-        x: coin.x,
-        y: coin.y,
-        collected: coin.collected,
-        isRainbow: coin.isRainbow,
-        collectedAt: coin._networkCollectedAt || null,
-        collectedAge: coin._networkCollectedAt ? Date.now() - coin._networkCollectedAt : null,
-        collectedById: coin._networkCollectedById || null,
-        collectedByName: coin._networkCollectedByName || null,
-        radius: coin.radius || 12,
-      };
+      return createCoinSnapshot(coin, now);
     });
 
-    this.networkManager.send('GAME_STATE', {
-      players: playersData,
-      scores: scoresData,
+    this.networkManager.send('GAME_STATE', createRoundSnapshot({
+      players,
+      scoreManager,
       obstacles: obstaclesData,
       coins: coinsData,
       timeLeft: this.runState?.timeManager?.timeLeft || 0,
@@ -877,7 +855,8 @@ export class NetworkRunState extends State {
       paused: this.networkPaused,
       pausedById: this.pausedById,
       pausedByName: this.pausedByName,
-    });
+      phase: GameStage.RUN,
+    }));
   }
 
   // ===== Render =====
