@@ -11,6 +11,10 @@ import { ObstacleType } from '../config/ObstacleType.js';
 import { TileType } from '../config/TileType.js';
 import { DrawPlayer } from '../utils/DrawPlayer.js';
 import { PauseManager } from '../systems/PauseManager.js';
+import {
+    isPlayerNearEndpoint,
+    playerTouchesEndpointTile,
+} from '../sim/core/endpoint.js';
 
 /**
  * RunState — the active gameplay phase.
@@ -125,13 +129,7 @@ export class RunState extends State {
                 mapPixelHeight ?? this.ctx.gameHeight,
             );
 
-            const { p } = this.ctx;
-            const tx = p.floor((player.x + player.w / 2) / GameConfig.TILE);
-            const ty = p.floor((player.y + player.h / 2) / GameConfig.TILE);
-            if (
-                tiledMap.MAP[ty] &&
-                tiledMap.MAP[ty][tx] === TileType.ENDPOINT
-            ) {
+            if (playerTouchesEndpointTile(player, tiledMap, this.ctx.p)) {
                 console.log(`[RunState] Player ${player.playerNo} (${player.nickname}) reached endpoint! gameState=${player.gameState}, rank so far=${this.timeManager.rankings.length}`);
                 this.timeManager.onPlayerReachFinish(player);
                 player.lifeState = PlayerState.DEAD;
@@ -762,21 +760,7 @@ export class RunState extends State {
     }
 
     _isNearEndpoint(player) {
-        const { tiledMap } = this.ctx;
-        if (!tiledMap) return false;
-        const endX = tiledMap.endX ?? 0;
-        const endY = tiledMap.endY ?? 0;
-        const endW = tiledMap.endW || GameConfig.TILE;
-        const endH = tiledMap.endH || GameConfig.TILE;
-        const px = player.x + player.w / 2;
-        const py = player.y + player.h / 2;
-        const ex = endX + endW / 2;
-        const ey = endY + endH / 2;
-        const radius =
-            (GameConfig.NEAR_FINISH_DEATH_RADIUS_TILES ?? 10) * GameConfig.TILE;
-        const dx = px - ex;
-        const dy = py - ey;
-        return dx * dx + dy * dy <= radius * radius;
+        return isPlayerNearEndpoint(player, this.ctx.tiledMap);
     }
 
     _labelFor(type) {

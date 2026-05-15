@@ -1,5 +1,6 @@
 import { GameConfig } from '../config/GameConfig.js';
 import { PlayerGameState } from '../config/PlayerGameState.js';
+import { advanceCountdown } from '../sim/core/countdown.js';
 
 export class TimeManager {
     /**
@@ -22,10 +23,10 @@ export class TimeManager {
     update(deltaTime) {
         if (this.isGameOver) return;
 
-        this.timeLeft -= deltaTime / 1000;
+        const result = advanceCountdown(this.timeLeft, deltaTime);
+        this.timeLeft = result.timeLeft;
 
-        if (this.timeLeft <= 0) {
-            this.timeLeft = 0;
+        if (result.expired) {
             this.handleTimeUp();
         }
     }
